@@ -1,0 +1,39 @@
+diff -duHp ../../xfce4-build-solaris-11/build/src/xfce4-power-manager-4.20.0/configure ./configure
+--- ../../xfce4-build-solaris-11/build/src/xfce4-power-manager-4.20.0/configure 2024-12-15 09:22:31.000000000 +0000
++++ ./configure 2025-10-25 20:41:55.505890792 +0100
+@@ -23746,6 +23746,8 @@ if test x$with_backend = x; then
+        case $host in #(
+   *-linux*) :
+     with_backend=linux ;; #(
++  *-sunos*|*-solaris*) :
++    with_backend=solaris ;; #(
+   *-*freebsd*) :
+     with_backend=freebsd ;; #(
+   *-*dragonfly*) :
+@@ -23767,6 +23769,11 @@ if test x$with_backend = xlinux; then
+ printf "%s\n" "#define BACKEND_TYPE_LINUX 1" >>confdefs.h
+
+ fi
++if test x$with_backend = xsolaris; then
++
++printf "%s\n" "#define BACKEND_TYPE_SOLARIS 1" >>confdefs.h
++
++fi
+ if test x$with_backend = xfreebsd; then
+
+ printf "%s\n" "#define BACKEND_TYPE_FREEBSD 1" >>confdefs.h
+--- ../../xfce4-build-solaris-11/build/src/xfce4-power-manager-4.20.0/src/xfpm-pm-helper.c    2024-11-21 06:26:21.000000000 +0000
++++ src/xfpm-pm-helper.c        2025-10-25 20:45:37.219736561 +0100
+@@ -82,6 +82,11 @@
+ #define UP_BACKEND_HIBERNATE_COMMAND "/usr/sbin/ZZZ"
+ #define UP_BACKEND_HYBRID_SLEEP_COMMAND "/usr/bin/false"
+ #endif
++#ifdef BACKEND_TYPE_SOLARIS
++#define UP_BACKEND_SUSPEND_COMMAND "/usr/bin/sys-suspend"
++#define UP_BACKEND_HIBERNATE_COMMAND "/usr/bin/sys-suspend"
++#define UP_BACKEND_HYBRID_SLEEP_COMMAND "/usr/bin/false"
++#endif
+
+
+ static gboolean
+
