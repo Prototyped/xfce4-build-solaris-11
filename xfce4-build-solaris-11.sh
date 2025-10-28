@@ -41,12 +41,24 @@ pull_sources() {
 }
 
 build_libdisplay_info() {
+    DESTDIR="$(pwd)/build/xfce-solaris11-4.20.0"
+    export DESTDIR
     cd build/src/libdisplay-info
     gsed -ri '/^[[:space:]]{1,}link_args:/d; /^[[:space:]]{1,}link_depends:/d' \
          meson.build
     meson setup build/
     ninja -C build/
     ninja -C build/ install
+    fix_prefix_in_pkgconfig
+    cd "$DESTDIR/usr/local"
+    find . \! -type d -print |
+        while read -r fname
+        do
+            mkdir -p "$(dirname "$DESTDIR/$fname")"
+            gmv -fT "$fname" "$DESTDIR/$fname"
+        done
+    cd -
+    rm -rf "$DESTDIR/usr"
 }
 
 build_hwdata() {
@@ -60,6 +72,8 @@ build_hwdata() {
 }
 
 run_configure() {
+    destination="$(pwd)/../../xfce-solaris11-4.20.0"
+    mkdir -p "$destination"
     env GDBUS_CODEGEN=/usr/bin/gdbus-codegen \
         GLIB_COMPILE_RESOURCES=/usr/bin/glib-compile-resources \
         GLIB_GENMARSHAL=/usr/bin/glib-genmarshal \
@@ -70,7 +84,8 @@ run_configure() {
         GSETTINGS=/usr/bin/gsettings \
         GIO_QUERYMODULES=/usr/bin/gio-querymodules \
         MAKE=gmake \
-        ./configure --disable-debug "$@" # --disable-silent-rules
+        ./configure --disable-debug --disable-silent-rules --disable-rpath \
+            --prefix="$destination" "$@"
 }
 
 fix_msgfmt_in_makefiles() {
@@ -83,6 +98,12 @@ fix_msgfmt_in_makefiles() {
             s/^MSGFMT_no = :$/MSGFMT_no = $(GMSGFMT_no)/g'
 }
 
+fix_prefix_in_pkgconfig() {
+    destination="$(pwd)/../../xfce-solaris11-4.20.0"
+    find . -name \*.pc -print0 |
+        xargs -0 gsed -ri "s|$destination|/usr/local|g" || true
+}
+
 build_xfce_package() {
     local package_name="$1"
     shift
@@ -90,6 +111,7 @@ build_xfce_package() {
     run_configure "$@"
     fix_msgfmt_in_makefiles
     gmake -j$(nproc)
+    fix_prefix_in_pkgconfig
     gmake install
 }
 
@@ -101,6 +123,7 @@ build_xfce4_power_manager() {
          config.h
     fix_msgfmt_in_makefiles
     gmake -j$(nproc)
+    fix_prefix_in_pkgconfig
     gmake install
 }
 
@@ -108,8 +131,12 @@ main() {
     (install_dependency_packages)
     (cleanup_build)
     (pull_sources)
-    PKG_CONFIG_PATH=/usr/lib/64/pkgconfig:/usr/local/lib/64/pkgconfig:/usr/local/lib/pkgconfig
+    PKG_CONFIG_PATH="/usr/lib/64/pkgconfig:/usr/local/lib/64/pkgconfig:/usr/local/lib/pkgconfig:$(pwd)/build/xfce-solaris11-4.20.0/lib/64/pkgconfig:$(pwd)/build/xfce-solaris11-4.20.0/lib/pkgconfig"
     export PKG_CONFIG_PATH
+    LD_LIBRARY_PATH="$(pwd)/build/xfce-solaris11-4.2.0/lib/64:$(pwd)/xfce-solaris11-4.2.0/lib"
+    export LD_LIBRARY_PATH
+    PATH="${PATH}:$(pwd)/build/xfce-solaris11-4.2.0/bin"
+    export PATH
     (build_libdisplay_info)
     (build_hwdata)
     (build_xfce_package xfce4-dev-tools)
@@ -138,6 +165,12 @@ main() {
                         --enable-startup-notification --enable-xi2)
     (build_xfce_package xfce4-session --disable-wayland --enable-x11 \
                         --enable-polkit)
+    (install_dir="$(pwd)/build/xfce-solaris11-4.20.0";
+     mkdir -p "${install_dir}/share/xsessions";
+     ginstall -c -m 644 build/src/xfce4-session-4.20.0/xfce.desktop \
+              "${install_dir}/share/xsessions/xfce.desktop";
+     gtar --numeric-owner -C build -I pbzip2 -cSpf \
+          "${install_dir}.tar.bz2" xfce-solaris11-4.20.0)
 }
 
 main
