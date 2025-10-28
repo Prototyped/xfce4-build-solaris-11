@@ -88,8 +88,8 @@ build_xfce_package() {
     shift
     cd build/src/${package_name}-4.20.0
     run_configure "$@"
-    gmake -j$(nproc)
     fix_msgfmt_in_makefiles
+    gmake -j$(nproc)
     gmake install
 }
 
@@ -99,8 +99,8 @@ build_xfce4_power_manager() {
     run_configure --disable-wayland --enable-x11 --enable-xfce4panel
     gsed -ri 's/^\/\* #undef BACKEND_TYPE_OPENBSD \*\/$/#define BACKEND_TYPE_SOLARIS 1/' \
          config.h
-    gmake -j$(nproc)
     fix_msgfmt_in_makefiles
+    gmake -j$(nproc)
     gmake install
 }
 
