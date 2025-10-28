@@ -75,7 +75,7 @@ run_configure() {
 
 fix_msgfmt_in_makefiles() {
     find . -type f -name Makefile -print0 |
-        gxargs -0 gsed -ir '
+        gxargs -0 gsed -ri '
             s/^MSGFMT = :$/MSGFMT = $(GMSGFMT)/g;
             s/^MSGFMT_015 = :$/MSGFMT_015 = $(GMSGFMT_015)/g;
             s/^MSGFMT_ = :$/MSGFMT_ = $(GMSGFMT_)/g;
@@ -114,6 +114,7 @@ main() {
     (build_hwdata)
     (build_xfce_package xfce4-dev-tools)
     (build_xfce_package libxfce4util)
+    (build_xfce_package xfconf)
     (build_xfce_package libxfce4ui)
     (build_xfce_package garcon)
     (build_xfce_package exo)
